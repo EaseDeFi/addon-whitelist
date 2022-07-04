@@ -10,6 +10,13 @@ const newIds = require("./newIds.json")
 // };
 
 var getIds = async() => {
+  // reset json first
+  try {
+    fs.writeFileSync("newIds.json", JSON.stringify([]));
+  } catch (err) {
+    console.log('Error', err.message);
+  }
+
   try {
     for(let i = 1; i <= 4; i++) {
       let coins = await CoinGeckoClient.coins.markets({order: CoinGecko.ORDER.MARKET_CAP_DESC, per_page: 250, page: i});
@@ -39,7 +46,7 @@ var getIds = async() => {
 
 var getLinks = async() => {
   const wait = (ms) =>
-  new Promise((resolve, reject) =>
+  new Promise((resolve) =>
     setTimeout(() => {
       resolve()
     }, ms)
@@ -53,8 +60,23 @@ var getLinks = async() => {
         let data = fs.readFileSync('whitelist.json');
         var json = JSON.parse(data);
         Object.keys(links.data).forEach((key) => "links".includes(key) || delete links.data[key]);
-        json.push(links.data);
 
+        let j = 0;
+        let duplicate = false;
+        for(const i of json) {
+          if(i["id"] == e.id) {
+            json[j].links = links.data.links
+            duplicate = true;
+            break
+          }
+          j++;
+        }
+        if(!duplicate) {
+          links.data.id = e.id;
+          json.push(links.data);
+          console.log(links.data)
+        }
+        
         try {
           fs.writeFileSync("whitelist.json", JSON.stringify(json));
         } catch (err) {
@@ -72,7 +94,6 @@ var getLinks = async() => {
       console.log(JSON.stringify(e.id))
     }
   }
-
 }
 
 var main = async() => {
